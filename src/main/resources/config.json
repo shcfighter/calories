@@ -14,5 +14,10 @@
     "queryTimeout" : 10000
   },
   "weixin.appid" : "wxf98bdcd6150b7e33",
-  "weixin.secret" : "35b319c6a9aee16e3977bf0d0d24ff7e"
+  "weixin.secret" : "35b319c6a9aee16e3977bf0d0d24ff7e",
+  "redis":{
+    "host": "localhost",
+    "port": 6379,
+    "password": "h123456"
+  }
 }

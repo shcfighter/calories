@@ -176,7 +176,7 @@ public class LuceneUtil {
      * Description：查询
      * @author shwang
      */
-    public JsonObject search(String[] fields, String keyword, int size){
+    public JsonObject search(String[] fields, String keyword, int pageSize){
 
         IndexReader indexReader = null;
         IndexSearcher indexSearcher = null;
@@ -190,7 +190,7 @@ public class LuceneUtil {
             Query query = queryParser.parse(keyword);
             
             //返回前number条记录
-            TopDocs topDocs = indexSearcher.search(query, size);
+            TopDocs topDocs = indexSearcher.search(query, pageSize);
             result.put("total", topDocs.totalHits.value);
 
             //高亮显示
@@ -229,6 +229,60 @@ public class LuceneUtil {
                     } else {
                         docJson.put(indexableField.name(), document.get(indexableField.name()));
                     }*/
+                }
+                hits.add(docJson);
+            }
+            result.put("hits", hits);
+        } catch (Exception e) {
+            LOGGER.error("lucene search error: ", e);
+        }finally{
+            try {
+                indexReader.close();
+            } catch (IOException e) {
+                LOGGER.error("lucene indexReader close error: ", e);
+            }
+        }
+        return result;
+    }
+
+    /**
+     * Description：分页查询
+     * @author shwang
+     */
+    public JsonObject searchPage(String[] fields, String keyword, int pageSize, int curPage){
+
+        IndexReader indexReader = null;
+        IndexSearcher indexSearcher = null;
+        JsonObject result = new JsonObject();
+        try {
+            // 根据目录打开一个indexReader
+            indexReader = DirectoryReader.open(directory);
+            indexSearcher = new IndexSearcher(indexReader);
+
+            MultiFieldQueryParser queryParser =new MultiFieldQueryParser(fields, analyzer);
+            Query query = queryParser.parse(keyword);
+
+            ScoreDoc scoreDoc = null;
+            if (1 != curPage) {
+                int num = pageSize * (curPage - 1);
+                TopDocs preDocs = indexSearcher.search(query, num);
+                num = (num > new Long(preDocs.totalHits.value).intValue()) ? new Long(preDocs.totalHits.value).intValue() : num;
+                scoreDoc = preDocs.scoreDocs[num - 1];
+            }
+
+            //返回前number条记录
+            TopDocs topDocs = indexSearcher.searchAfter(scoreDoc, query, pageSize);
+            result.put("total", topDocs.totalHits.value);
+
+            JsonArray hits = new JsonArray();
+            ScoreDoc[] scoreDocs = topDocs.scoreDocs;
+            for(ScoreDoc scDoc : scoreDocs) {
+                JsonObject docJson = new JsonObject().put("score", scDoc.score);
+                Document document = indexSearcher.doc(scDoc.doc);
+                Iterator<IndexableField> iterator = document.iterator();
+                while (iterator.hasNext()) {
+                    IndexableField indexableField = iterator.next();
+                    docJson.put(indexableField.name(), document.get(indexableField.name()));
                 }
                 hits.add(docJson);
             }

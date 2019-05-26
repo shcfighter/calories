@@ -18,7 +18,7 @@ public interface IFoodHandler {
     IFoodHandler initLoadFood(Handler<AsyncResult<Void>> handler);
 
     @Fluent
-    IFoodHandler searchFood(String keyword, int pageSize, int page, Handler<AsyncResult<JsonObject>> handler);
+    IFoodHandler searchFood(String keyword, int pageSize, int curPage, Handler<AsyncResult<JsonObject>> handler);
 
     @Fluent
     IFoodHandler findFoodById(long id, Handler<AsyncResult<JsonObject>> handler);

@@ -154,7 +154,7 @@ public class RestCaloriesRxVerticle extends RestAPIRxVerticle{
     private void searchHandler(RoutingContext context){
         final JsonObject params = context.getBodyAsJson();
         final String keyword = params.getString("keyword");
-        final int page = Optional.ofNullable(params.getInteger("page")).orElse(1);
+        final int page = Optional.ofNullable(params.getInteger("curPage")).orElse(1);
         long start = System.currentTimeMillis();
         foodHandler.searchFood(keyword, Optional.ofNullable(params.getInteger("pageSize")).orElse(12), page, handler -> {
             LOGGER.info("查询食物结束线程：{}, search time:{}", Thread.currentThread().getName(), System.currentTimeMillis() - start);

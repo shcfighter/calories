@@ -89,10 +89,10 @@ public class FoodHandler extends JdbcRxRepositoryWrapper implements IFoodHandler
     }
 
     @Override
-    public IFoodHandler searchFood(String keyword, int pageSize, int page, Handler<AsyncResult<JsonObject>> handler) {
+    public IFoodHandler searchFood(String keyword, int pageSize, int curPage, Handler<AsyncResult<JsonObject>> handler) {
         Future<JsonObject> future = Future.future();
         try {
-            future.complete(luceneUtil.search(new String[]{"name"}, keyword, 10));
+            future.complete(luceneUtil.searchPage(new String[]{"name"}, keyword, pageSize, curPage));
         } catch (Exception e) {
             future.fail(e);
         }
