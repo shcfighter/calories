@@ -57,7 +57,8 @@ public class RestCaloriesRxVerticle extends RestAPIRxVerticle{
         router.getDelegate().route().handler(ShopUserSessionHandler.create(vertx.getDelegate(), this.config()));
 
         // API route handler    需要登录
-        router.put("/calories/api/user/mobile").handler(this::updateMobileHandler);      //更改手机号码
+        router.get("/calories/api/user/get").handler(this::getUserInfoHandler);      //获取用户信息
+        router.put("/calories/api/user/update").handler(this::updateUserInfoHandler);      //更改手机号码
 
         //全局异常处理
         this.globalVerticle(router);
@@ -113,24 +114,6 @@ public class RestCaloriesRxVerticle extends RestAPIRxVerticle{
             return;
         });
     }
-
-    /**
-     * 更改手机号码
-     * @param context
-     */
-    private void updateMobileHandler(RoutingContext context){
-        JsonObject params = context.getBodyAsJson();
-        userHandler.updateMobile(context.request().getHeader("token"), params, hander -> {
-            if(hander.failed() || hander.result() <= 0){
-                LOGGER.info("更改手机号码失败：", hander.cause());
-                this.returnWithFailureMessage(context, "更改手机号码失败");
-                return;
-            }
-            this.returnWithSuccessMessage(context, "更改手机号码成功");
-            return ;
-        });
-    }
-
 
     /**
      * 初始化食物信息
@@ -208,4 +191,37 @@ public class RestCaloriesRxVerticle extends RestAPIRxVerticle{
         });
     }
 
+    /**
+     * 获取用户信息
+     * @param context
+     */
+    private void getUserInfoHandler(RoutingContext context){
+        userHandler.getUserInfo(context.request().getHeader("token"), handler -> {
+            if (handler.failed()) {
+                LOGGER.info("获取用户信息失败：", handler.cause());
+                this.returnWithFailureMessage(context, "获取用户信息失败");
+                return ;
+            } else {
+                this.returnWithSuccessMessage(context, "获取用户信息失败成功", handler.result());
+                return ;
+            }
+        });
+    }
+
+    /**
+     * 更改手机号码
+     * @param context
+     */
+    private void updateUserInfoHandler(RoutingContext context){
+        JsonObject params = context.getBodyAsJson();
+        userHandler.updateUserInfo(context.request().getHeader("token"), params, hander -> {
+            if(hander.failed() || hander.result().getUpdated() <= 0){
+                LOGGER.info("更改手机号码失败：", hander.cause());
+                this.returnWithFailureMessage(context, "更改手机号码失败");
+                return;
+            }
+            this.returnWithSuccessMessage(context, "更改手机号码成功");
+            return ;
+        });
+    }
 }

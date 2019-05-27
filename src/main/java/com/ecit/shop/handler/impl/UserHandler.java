@@ -2,6 +2,7 @@ package com.ecit.shop.handler.impl;
 
 import com.ecit.common.IdBuilder;
 import com.ecit.common.db.JdbcRxRepositoryWrapper;
+import com.ecit.common.enums.JdbcEnum;
 import com.ecit.common.utils.JsonUtils;
 import com.ecit.common.utils.WXUtils;
 import com.ecit.shop.constants.UserSql;
@@ -14,11 +15,15 @@ import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
+import io.vertx.ext.sql.UpdateResult;
 import io.vertx.reactivex.core.Vertx;
 import io.vertx.reactivex.ext.web.client.WebClient;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Created by shwang on 2018/2/2.
@@ -102,22 +107,47 @@ public class UserHandler extends JdbcRxRepositoryWrapper implements IUserHandler
     }
 
     @Override
-    public IUserHandler updateMobile(String token, JsonObject params, Handler<AsyncResult<Integer>> handler) {
+    public IUserHandler updateUserInfo(String token, JsonObject params, Handler<AsyncResult<UpdateResult>> handler) {
+        Future<JsonObject> sessionFuture = this.getSession(token);
+        sessionFuture.compose(session -> {
+            long userId = session.getLong("user_id");
+            List<JsonObject> exec = new ArrayList<>();
+            Future<JsonObject> userFuture = Future.future();
+            this.retrieveOne(new JsonArray().add(userId), UserSql.SELECT_USER_SQL).subscribe(userFuture::complete, userFuture::fail);
+           Future<JsonObject> userInfoFuture = Future.future();
+           this.retrieveOne(new JsonArray().add(userId), UserSql.SELECT_USERINFO_SQL).subscribe(userInfoFuture::complete, userInfoFuture::fail);
+           return userFuture.compose(user -> {
+               if(JsonUtils.isNull(user)){
+                   return Future.failedFuture("用户不存在");
+               }
+               exec.add(new JsonObject().put("type", JdbcEnum.update.name()).put("sql", UserSql.UPDATE_MOBILE_SQL)
+                        .put("params", new JsonArray().add(params.getString("mobile")).add(userId).add(user.getLong("versions"))));
+               return userInfoFuture.compose(userInfo -> {
+                   if(JsonUtils.isNull(userInfo)){
+                       return Future.failedFuture("用户扩展信息不存在");
+                   }
+                   exec.add(new JsonObject().put("type", JdbcEnum.update.name()).put("sql", UserSql.UPDATE_USERINFO_SQL)
+                           .put("params", new JsonArray().add(params.getString("real_name")).add(params.getString("sex"))
+                           .add(userId).add(userInfo.getLong("versions"))));
+                   return Future.succeededFuture();
+               }).compose(obj -> {
+                   Future<UpdateResult> future = Future.future();
+                   this.executeTransaction(exec).subscribe(future::complete, future::fail);
+                   return future;
+               });
+            });
+        }).setHandler(handler);
+        return this;
+    }
+
+    @Override
+    public IUserHandler getUserInfo(String token, Handler<AsyncResult<JsonObject>> handler) {
         Future<JsonObject> sessionFuture = this.getSession(token);
         sessionFuture.compose(session -> {
             long userId = session.getLong("user_id");
             Future<JsonObject> userFuture = Future.future();
-            this.retrieveOne(new JsonArray().add(userId), UserSql.SELECT_USER_SQL).subscribe(userFuture::complete, userFuture::fail);
-            return userFuture.compose(user -> {
-               if(JsonUtils.isNull(user)){
-                   return Future.failedFuture("用户不存在");
-               }
-               JsonObject mobile = WXUtils.decrypt(params.getString("encryptedData"), session.getString("session_key"), params.getString("iv"));
-               System.out.println(mobile);
-               Future<Integer> future = Future.future();
-               this.execute(new JsonArray().add(mobile.getString("phoneNumber")).add(userId).add(user.getLong("versions")), UserSql.UPDATE_MOBILE_SQL).subscribe(future::complete, future::fail);
-               return future;
-            });
+            this.retrieveOne(new JsonArray().add(userId), UserSql.SELECT_USER_AND_INFO_SQL).subscribe(userFuture::complete, userFuture::fail);
+            return userFuture;
         }).setHandler(handler);
         return this;
     }

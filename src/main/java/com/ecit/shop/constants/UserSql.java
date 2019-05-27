@@ -41,7 +41,22 @@ public interface UserSql {
     String SELECT_USER_SQL = "select * from t_user where user_id = ? and status = 1 and is_deleted = 0";
 
     /**
+     * 查询用户扩展信息
+     */
+    String SELECT_USERINFO_SQL = "select * from t_user_info where user_id = ? and is_deleted = 0";
+
+    /**
      * 更新手机号码
      */
     String UPDATE_MOBILE_SQL = "update t_user set mobile = ?, update_time = now(), versions = (versions + 1) where user_id = ? and versions = ?";
+
+    /**
+     * 更新用户扩展信息
+     */
+    String UPDATE_USERINFO_SQL = "update t_user_info set real_name = ?, sex = ?, update_time = now(), versions = (versions + 1) where user_id = ? and versions = ?";
+
+    /**
+     * 获取用户信息
+     */
+    String SELECT_USER_AND_INFO_SQL = "select u.user_id, u.mobile, ui.real_name, ui.sex, ui.avatar_url, u.login_name, u.versions from t_user u left join t_user_info ui on(u.user_id = ui.user_id) where u.user_id = ? and u.is_deleted = 0;";
 }

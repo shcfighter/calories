@@ -6,6 +6,7 @@ import io.vertx.codegen.annotations.VertxGen;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Handler;
 import io.vertx.core.json.JsonObject;
+import io.vertx.ext.sql.UpdateResult;
 
 /**
  * Created by shwang on 2018/2/2.
@@ -21,5 +22,8 @@ public interface IUserHandler {
     IUserHandler checkToken(String token, Handler<AsyncResult<Boolean>> handler);
 
     @Fluent
-    IUserHandler updateMobile(String token, JsonObject params, Handler<AsyncResult<Integer>> handler);
+    IUserHandler updateUserInfo(String token, JsonObject params, Handler<AsyncResult<UpdateResult>> handler);
+
+    @Fluent
+    IUserHandler getUserInfo(String token, Handler<AsyncResult<JsonObject>> handler);
 }

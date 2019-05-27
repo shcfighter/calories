@@ -10,10 +10,8 @@ import com.ecit.common.db.JdbcRxRepositoryWrapper;
 import com.ecit.common.result.ResultItems;
 import io.vertx.core.Future;
 import io.vertx.core.Vertx;
-import io.vertx.core.http.HttpMethod;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.RoutingContext;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -28,7 +26,6 @@ public class ShopUserSessionHandlerImpl extends JdbcRxRepositoryWrapper implemen
     }
 
     public void handle(RoutingContext routingContext) {
-        System.out.println(routingContext.request().uri());
         String token = routingContext.request().getHeader("token");
         LOGGER.info("url: {}, token: {}", routingContext.request().uri(), token);
         Future<JsonObject> future = this.getSession(token);
