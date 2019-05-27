@@ -132,6 +132,9 @@ public class UserHandler extends JdbcRxRepositoryWrapper implements IUserHandler
                    return Future.succeededFuture();
                }).compose(obj -> {
                    Future<UpdateResult> future = Future.future();
+                   exec.forEach(j -> {
+                    LOGGER.info(j::encodePrettily);
+                   });
                    this.executeTransaction(exec).subscribe(future::complete, future::fail);
                    return future;
                });
