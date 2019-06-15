@@ -122,13 +122,13 @@ public class UserHandler extends JdbcRxRepositoryWrapper implements IUserHandler
                    return Future.failedFuture("用户不存在");
                }
                exec.add(new JsonObject().put("type", JdbcEnum.update.name()).put("sql", UserSql.UPDATE_MOBILE_SQL)
-                        .put("params", new JsonArray().add(params.getString("mobile")).add(userId).add(user.getLong("versions"))));
+                        .put("params", new JsonArray().add(params.containsKey("mobile") ? params.getString("mobile") : "").add(userId).add(user.getLong("versions"))));
                return userInfoFuture.compose(userInfo -> {
                    if(JsonUtils.isNull(userInfo)){
                        return Future.failedFuture("用户扩展信息不存在");
                    }
                    exec.add(new JsonObject().put("type", JdbcEnum.update.name()).put("sql", UserSql.UPDATE_USERINFO_SQL)
-                           .put("params", new JsonArray().add(params.getString("real_name")).add(params.getString("sex"))
+                           .put("params", new JsonArray().add(params.containsKey("real_name") ? params.getString("real_name"): "").add(params.getString("sex"))
                            .add(userId).add(userInfo.getLong("versions"))));
                    return Future.succeededFuture();
                }).compose(obj -> {
