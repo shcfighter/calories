@@ -72,9 +72,9 @@ public class UserHandler extends JdbcRxRepositoryWrapper implements IUserHandler
             Future<JsonObject> userFuture = Future.future();
             this.retrieveOne(new JsonArray().add(openid), UserSql.SELECT_BY_OPENID_SQL)
                     .subscribe(userFuture::complete, userFuture::fail);
-            LOGGER.info("授权wxInfo：", wxInfo::encodePrettily);
+            LOGGER.info("授权wxInfo：{}", wxInfo::encodePrettily);
             JsonObject userInfo = WXUtils.decrypt(wxInfo.getString("encryptedData"), sessionKey, wxInfo.getString("iv"));
-            System.out.println(userInfo);
+            LOGGER.info("揭秘信息：{}", userInfo);
             return userFuture.compose(user -> {
                 long userId;
                 final String token = MD5Util.toMD5String(StringUtils.join(openid, "_", sessionKey, "_", System.currentTimeMillis()));
