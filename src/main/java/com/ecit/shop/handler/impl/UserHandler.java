@@ -72,6 +72,7 @@ public class UserHandler extends JdbcRxRepositoryWrapper implements IUserHandler
             Future<JsonObject> userFuture = Future.future();
             this.retrieveOne(new JsonArray().add(openid), UserSql.SELECT_BY_OPENID_SQL)
                     .subscribe(userFuture::complete, userFuture::fail);
+            LOGGER.info("授权wxInfo：", wxInfo::encodePrettily);
             JsonObject userInfo = WXUtils.decrypt(wxInfo.getString("encryptedData"), sessionKey, wxInfo.getString("iv"));
             System.out.println(userInfo);
             return userFuture.compose(user -> {

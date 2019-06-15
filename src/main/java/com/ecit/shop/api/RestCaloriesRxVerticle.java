@@ -81,6 +81,7 @@ public class RestCaloriesRxVerticle extends RestAPIRxVerticle{
      */
     private void accreditHandler(RoutingContext context){
         final JsonObject params = context.getBodyAsJson();
+        LOGGER.info("授权用户信息：", params::encodePrettily);
         userHandler.accredit(params.getString("code"), params.getJsonObject("user_info"), handler -> {
             if(handler.failed()){
                 LOGGER.info("授权结果：", handler.cause());
