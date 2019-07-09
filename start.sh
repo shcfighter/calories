@@ -15,5 +15,5 @@ rm -rf /data/calories/logs/calories*.log
 mvn clean install
 
 #启动服务
-nohup java -Xms64m -Xmx64m -jar /data/calories/calories/target/calories-1.0-SNAPSHOT-fat.jar -conf /data/calories_config.json -cluster >> /data/calories/logs/calories.log &
+nohup java -Xms512m -Xmx512m -XX:+PrintGC -XX:+PrintGCDetails -Xloggc:/data/calories_gc.log -jar /data/calories/calories/target/calories-1.0-SNAPSHOT-fat.jar -conf /data/calories_config.json -cluster >> /data/calories/logs/calories.log &
 echo 'calories Micro Services start ...'

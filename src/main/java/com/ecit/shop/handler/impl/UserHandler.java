@@ -24,6 +24,7 @@ import org.apache.logging.log4j.Logger;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * Created by shwang on 2018/2/2.
@@ -121,14 +122,15 @@ public class UserHandler extends JdbcRxRepositoryWrapper implements IUserHandler
                if(JsonUtils.isNull(user)){
                    return Future.failedFuture("用户不存在");
                }
+		LOGGER.info(params::encodePrettily);
                exec.add(new JsonObject().put("type", JdbcEnum.update.name()).put("sql", UserSql.UPDATE_MOBILE_SQL)
-                        .put("params", new JsonArray().add(params.containsKey("mobile") ? params.getString("mobile") : "").add(userId).add(user.getLong("versions"))));
+                        .put("params", new JsonArray().add(Objects.nonNull(params.getString("mobile")) ? params.getString("mobile") : "").add(userId).add(user.getLong("versions"))));
                return userInfoFuture.compose(userInfo -> {
                    if(JsonUtils.isNull(userInfo)){
                        return Future.failedFuture("用户扩展信息不存在");
                    }
                    exec.add(new JsonObject().put("type", JdbcEnum.update.name()).put("sql", UserSql.UPDATE_USERINFO_SQL)
-                           .put("params", new JsonArray().add(params.containsKey("real_name") ? params.getString("real_name"): "").add(params.getString("sex"))
+                           .put("params", new JsonArray().add(Objects.nonNull(params.getString("real_name")) ? params.getString("real_name"): "").add(params.getString("sex"))
                            .add(userId).add(userInfo.getLong("versions"))));
                    return Future.succeededFuture();
                }).compose(obj -> {
