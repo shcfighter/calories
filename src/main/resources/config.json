@@ -9,7 +9,7 @@
     "maxPoolSize" : 50,
     "username" : "postgres",
     "password" : "h123456",
-    "database" : "shop_miniprogram",
+    "database" : "calories",
     "charset" : "UTF-8",
     "queryTimeout" : 10000
   },
