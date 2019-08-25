@@ -1,7 +1,9 @@
 package com.ecit.shop.api;
 
 import com.ecit.auth.ShopUserSessionHandler;
+import com.ecit.common.constants.Constants;
 import com.ecit.common.rx.RestAPIRxVerticle;
+import com.ecit.shop.constants.EventBusAddress;
 import com.ecit.shop.handler.IFoodHandler;
 import com.ecit.shop.handler.IHeatHandler;
 import com.ecit.shop.handler.IUserHandler;
@@ -13,12 +15,8 @@ import io.vertx.core.json.JsonObject;
 import io.vertx.reactivex.ext.web.Router;
 import io.vertx.reactivex.ext.web.RoutingContext;
 import io.vertx.reactivex.ext.web.handler.BodyHandler;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-
-import java.util.Objects;
-import java.util.Optional;
 
 /**
  * Created by shwang on 2018/2/2.
@@ -49,7 +47,7 @@ public class RestCaloriesRxVerticle extends RestAPIRxVerticle{
         //不需要登录
         router.put("/calories/api/accredit").handler(this::accreditHandler);     //微信授权
         router.get("/calories/api/user/check").handler(this::checkTokenHandler);     //检查校验token
-        //router.get("/calories/api/init").blockingHandler(this::initFoodHandler);     //获取category信息
+        router.get("/calories/api/init").handler(this::initFoodHandler);     //获取category信息
         router.post("/calories/api/food/search").handler(this::searchHandler);     //搜索食物信息
         router.get("/calories/api/food/detail/:id").handler(this::findFoodByIdHandler);     //搜索食物详情信息
         router.get("/calories/api/heat/:id").handler(this::findHeatByFoodIdHandler);     //搜索热量详情信息
@@ -82,15 +80,13 @@ public class RestCaloriesRxVerticle extends RestAPIRxVerticle{
     private void accreditHandler(RoutingContext context){
         final JsonObject params = context.getBodyAsJson();
         LOGGER.info("授权用户信息：{}", params::encodePrettily);
-        userHandler.accredit(params.getString("code"), params.getJsonObject("user_info"), handler -> {
-            if(handler.failed()){
-                LOGGER.info("授权结果：", handler.cause());
-                this.returnWithFailureMessage(context, "授权失败");
-                return ;
-            }
-            JsonObject result = handler.result();
-            this.returnWithSuccessMessage(context, "授权成功", result);
+        vertx.eventBus().rxSend(EventBusAddress.ACCREDIT, params).subscribe(message -> {
+            this.returnWithSuccessMessage(context, "授权成功", JsonObject.mapFrom(message.body()).getJsonObject(Constants.BODY));
             return ;
+        }, fail -> {
+            LOGGER.info("授权结果：", fail.getCause());
+            this.returnWithFailureMessage(context, "授权失败");
+            return;
         });
     }
 
@@ -100,18 +96,18 @@ public class RestCaloriesRxVerticle extends RestAPIRxVerticle{
      */
     private void checkTokenHandler(RoutingContext context){
         final String token = context.request().getHeader("token");
-        if(StringUtils.isEmpty(token)){
-            LOGGER.info("检查token为空");
-            this.returnWithFailureMessage(context, "授权失败");
-            return;
-        }
-        userHandler.checkToken(token, handler -> {
-            if(handler.failed() || !handler.result()){
-                LOGGER.info("token【{}】授权失败", token, handler.cause());
+        JsonObject params = new JsonObject().put(Constants.TOKEN, token);
+        vertx.eventBus().rxSend(EventBusAddress.USER_CHECK, params).subscribe(message -> {
+            JsonObject result = JsonObject.mapFrom(message.body());
+            if (this.isNoDataResult(result)) {
                 this.returnWithFailureMessage(context, "授权失败");
                 return;
             }
-            this.returnWithSuccessMessage(context, "授权成功");
+            this.returnWithSuccessMessage(context, "授权成功", result.getJsonObject(Constants.BODY));
+            return ;
+        }, fail -> {
+            LOGGER.info("授权结果：", fail.getCause());
+            this.returnWithFailureMessage(context, "授权失败");
             return;
         });
     }
@@ -120,13 +116,12 @@ public class RestCaloriesRxVerticle extends RestAPIRxVerticle{
      * 初始化食物信息
      */
     private void initFoodHandler(RoutingContext context){
-        foodHandler.initLoadFood(hander -> {
-            if(hander.failed()){
-                LOGGER.info("获取商品类别信息失败:", hander.cause());
-                this.returnWithFailureMessage(context, "获取商品类别信息失败");
-                return;
-            }
-            this.returnWithSuccessMessage(context, "获取商品类别信息成功", hander.result());
+        vertx.eventBus().rxSend(EventBusAddress.INIT_FOOD, new JsonObject()).subscribe(message -> {
+            this.returnWithSuccessMessage(context, "获取商品类别信息成功", JsonObject.mapFrom(message.body()).getJsonObject(Constants.BODY));
+            return ;
+        }, fail -> {
+            LOGGER.info("获取商品类别信息失败：", fail.getCause());
+            this.returnWithFailureMessage(context, "获取商品类别信息失败");
             return;
         });
     }
@@ -137,23 +132,19 @@ public class RestCaloriesRxVerticle extends RestAPIRxVerticle{
      */
     private void searchHandler(RoutingContext context){
         final JsonObject params = context.getBodyAsJson();
-        final String keyword = params.getString("keyword");
-        final int page = Optional.ofNullable(params.getInteger("curPage")).orElse(1);
-        long start = System.currentTimeMillis();
-        foodHandler.searchFood(keyword, Optional.ofNullable(params.getInteger("pageSize")).orElse(12), page, handler -> {
-            LOGGER.info("查询食物结束线程：{}, search time:{}", Thread.currentThread().getName(), System.currentTimeMillis() - start);
-            if(handler.failed()){
-                LOGGER.info("搜索食物异常：", handler.cause());
-                this.returnWithFailureMessage(context, "暂无该食物！");
+        vertx.eventBus().rxSend(EventBusAddress.SEARCH_FOOD, params).subscribe(message -> {
+            final JsonObject result = JsonObject.mapFrom(message.body());
+            if(this.isNoDataResult(result)){
+                this.returnWithFailureMessage(context, result.getString(Constants.BODY));
                 return ;
             }
-            if(Objects.isNull(handler.result())){
-                this.returnWithFailureMessage(context, "暂无该食物！");
-                return ;
-            }
-            final JsonObject result = handler.result();
-            this.returnWithSuccessMessage(context, "查询成功", result.getLong("total").intValue(),
-                    result.getJsonArray("hits"), page);
+            JsonObject body = result.getJsonObject(Constants.BODY);
+            this.returnWithSuccessMessage(context, "查询成功", body.getLong("total").intValue(),
+                    body.getJsonArray("hits"), body.getInteger("page", 1));
+            return ;
+        }, fail -> {
+            LOGGER.info("搜索食物异常：", fail.getCause());
+            this.returnWithFailureMessage(context, "暂无该食物！");
             return ;
         });
     }
@@ -163,15 +154,14 @@ public class RestCaloriesRxVerticle extends RestAPIRxVerticle{
      * @param context
      */
     private void findFoodByIdHandler(RoutingContext context){
-        foodHandler.findFoodById(Long.parseLong(context.request().getParam("id")), handler -> {
-            if (handler.failed()) {
-                LOGGER.info("根据id查询食物失败：", handler.cause());
-                this.returnWithFailureMessage(context, "查询食物失败");
-                return ;
-            } else {
-                this.returnWithSuccessMessage(context, "查询食物信息详情成功", handler.result());
-                return ;
-            }
+        JsonObject params = new JsonObject().put(Constants.ID, Long.parseLong(context.request().getParam(Constants.ID)));
+        vertx.eventBus().rxSend(EventBusAddress.FOOD_DETAIL, params).subscribe(message -> {
+            this.returnWithSuccessMessage(context, "查询食物信息详情成功", JsonObject.mapFrom(message.body()).getJsonObject(Constants.BODY));
+            return ;
+        }, fail -> {
+            LOGGER.info("根据id查询食物失败：", fail.getCause());
+            this.returnWithFailureMessage(context, "查询食物失败");
+            return;
         });
     }
 
@@ -180,15 +170,14 @@ public class RestCaloriesRxVerticle extends RestAPIRxVerticle{
      * @param context
      */
     private void findHeatByFoodIdHandler(RoutingContext context){
-        heatHandler.findHeatByFoodId(Long.parseLong(context.request().getParam("id")), handler -> {
-            if (handler.failed()) {
-                LOGGER.info("根据id查询热量失败：", handler.cause());
-                this.returnWithFailureMessage(context, "查询热量失败");
-                return ;
-            } else {
-                this.returnWithSuccessMessage(context, "查询热量信息详情成功", handler.result());
-                return ;
-            }
+        JsonObject params = new JsonObject().put(Constants.ID, Long.parseLong(context.request().getParam(Constants.ID)));
+        vertx.eventBus().rxSend(EventBusAddress.HEAT_DETAIL, params).subscribe(message -> {
+            this.returnWithSuccessMessage(context, "查询热量信息详情成功", JsonObject.mapFrom(message.body()).getJsonArray(Constants.BODY));
+            return ;
+        }, fail -> {
+            LOGGER.info("根据id查询热量失败：", fail.getCause());
+            this.returnWithFailureMessage(context, "查询热量失败");
+            return;
         });
     }
 
@@ -197,15 +186,14 @@ public class RestCaloriesRxVerticle extends RestAPIRxVerticle{
      * @param context
      */
     private void getUserInfoHandler(RoutingContext context){
-        userHandler.getUserInfo(context.request().getHeader("token"), handler -> {
-            if (handler.failed()) {
-                LOGGER.info("获取用户信息失败：", handler.cause());
-                this.returnWithFailureMessage(context, "获取用户信息失败");
-                return ;
-            } else {
-                this.returnWithSuccessMessage(context, "获取用户信息失败成功", handler.result());
-                return ;
-            }
+        JsonObject params = new JsonObject().put(Constants.TOKEN, context.request().getHeader(Constants.TOKEN));
+        vertx.eventBus().rxSend(EventBusAddress.GET_USER, params).subscribe(message -> {
+            this.returnWithSuccessMessage(context, "获取用户信息失败成功", JsonObject.mapFrom(message.body()).getJsonObject(Constants.BODY));
+            return ;
+        }, fail -> {
+            LOGGER.info("获取用户信息失败：", fail.getCause());
+            this.returnWithFailureMessage(context, "获取用户信息失败");
+            return;
         });
     }
 
@@ -214,15 +202,14 @@ public class RestCaloriesRxVerticle extends RestAPIRxVerticle{
      * @param context
      */
     private void updateUserInfoHandler(RoutingContext context){
-        JsonObject params = context.getBodyAsJson();
-        userHandler.updateUserInfo(context.request().getHeader("token"), params, hander -> {
-            if(hander.failed() || hander.result().getUpdated() <= 0){
-                LOGGER.info("更改手机号码失败：", hander.cause());
-                this.returnWithFailureMessage(context, "更改手机号码失败");
-                return;
-            }
+        JsonObject params = context.getBodyAsJson().put(Constants.TOKEN, context.request().getHeader(Constants.TOKEN));
+        vertx.eventBus().rxSend(EventBusAddress.UPDATE_USER, params).subscribe(message -> {
             this.returnWithSuccessMessage(context, "更改手机号码成功");
             return ;
+        }, fail -> {
+            LOGGER.info("更改手机号码失败：", fail.getCause());
+            this.returnWithFailureMessage(context, "更改手机号码失败");
+            return;
         });
     }
 }

@@ -1,6 +1,9 @@
 package com.ecit.common.rx;
 
+import com.ecit.common.constants.Constants;
+import com.ecit.common.enums.EventBusStatus;
 import com.ecit.common.result.ResultItems;
+import com.ecit.common.utils.JsonUtils;
 import io.reactivex.Single;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Handler;
@@ -352,5 +355,17 @@ public abstract class RestAPIRxVerticle extends BaseMicroserviceRxVerticle {
 
   protected String getHeader(RoutingContext context, String key) {
     return Optional.ofNullable(context.request().getHeader(key)).orElse(null);
+  }
+
+  /**
+   * 判断eventbus 返回业务状态
+   * @param result
+   * @return
+   */
+  protected boolean isNoDataResult(JsonObject result){
+    if (JsonUtils.isNull(result) || !result.containsKey(Constants.STATUS)) {
+      return true;
+    }
+    return result.getInteger(Constants.STATUS) == EventBusStatus.NO_DATA.getStatus();
   }
 }
