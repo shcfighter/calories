@@ -3,6 +3,7 @@ package com.ecit.shop.api;
 import com.ecit.common.constants.Constants;
 import com.ecit.common.enums.EventBusStatus;
 import com.ecit.common.rx.EventBusRxVerticle;
+import com.ecit.common.utils.JsonUtils;
 import com.ecit.shop.constants.EventBusAddress;
 import com.ecit.shop.handler.IFoodHandler;
 import com.ecit.shop.handler.IHeatHandler;
@@ -118,7 +119,7 @@ public class DataRxVerticle extends EventBusRxVerticle {
                 message.fail(500, handler.cause().getMessage());
                 return ;
             }
-            if(Objects.isNull(handler.result())){
+            if(JsonUtils.isNull(handler.result())){
                 message.reply(this.resultEventBus(EventBusStatus.NO_DATA,"暂无该食物！"));
                 return ;
             }

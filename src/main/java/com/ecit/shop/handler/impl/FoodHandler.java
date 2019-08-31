@@ -2,6 +2,7 @@ package com.ecit.shop.handler.impl;
 
 import com.ecit.common.constants.Constants;
 import com.ecit.common.db.JdbcRxRepositoryWrapper;
+import com.ecit.common.utils.RecommendFoodUtils;
 import com.ecit.lucene.LuceneUtil;
 import com.ecit.shop.constants.FoodSql;
 import com.ecit.shop.handler.IFoodHandler;
@@ -26,9 +27,9 @@ public class FoodHandler extends JdbcRxRepositoryWrapper implements IFoodHandler
     private static final Logger LOGGER = LogManager.getLogger(FoodHandler.class);
     private static final String FOOD = "food";
 
-    final Vertx vertx;
-    final JsonObject config;
-    final LuceneUtil luceneUtil;
+    private final Vertx vertx;
+    private final JsonObject config;
+    private final LuceneUtil luceneUtil;
 
     public FoodHandler(Vertx vertx, JsonObject config) {
         super(vertx, config);
@@ -51,7 +52,7 @@ public class FoodHandler extends JdbcRxRepositoryWrapper implements IFoodHandler
             this.retrieveOne(new JsonArray().add(0), FoodSql.SELECT_FOOD_ROWNUM_SQL).subscribe(rowFuture::complete, rowFuture::fail);
             rowFuture.compose(rowJson -> {
                 int row = rowJson.getInteger("row_num", 0);
-                return CompositeFuture.all(this.createLuceneIndex(this, row));
+                return CompositeFuture.all(this.createLuceneIndex(row));
             }).setHandler(compositeFutureAsyncResult -> {
                 if (compositeFutureAsyncResult.failed()) {
                     LOGGER.error("构建lucene索引异常:{}", compositeFutureAsyncResult.cause());
@@ -72,11 +73,10 @@ public class FoodHandler extends JdbcRxRepositoryWrapper implements IFoodHandler
 
     /**
      * 批量插入lucene
-     * @param foodHandler
      * @param row
      * @return
      */
-    private List<Future> createLuceneIndex(IFoodHandler foodHandler, int row){
+    private List<Future> createLuceneIndex(int row){
         final int size = 100;
         int totalPage = (row % size != 0) ? (row / size + 1) : (row / size);
         final List<Future> isOk = new ArrayList<>(totalPage);
@@ -92,7 +92,7 @@ public class FoodHandler extends JdbcRxRepositoryWrapper implements IFoodHandler
     public IFoodHandler searchFood(String keyword, int pageSize, int curPage, Handler<AsyncResult<JsonObject>> handler) {
         Future<JsonObject> future = Future.future();
         try {
-            future.complete(luceneUtil.searchPage(new String[]{"name"}, keyword, pageSize, curPage));
+            future.complete(luceneUtil.searchPage(new String[]{"name"}, RecommendFoodUtils.randomFoodName(keyword), pageSize, curPage));
         } catch (Exception e) {
             future.fail(e);
         }

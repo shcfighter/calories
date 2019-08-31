@@ -188,7 +188,7 @@ public class RestCaloriesRxVerticle extends RestAPIRxVerticle{
     private void getUserInfoHandler(RoutingContext context){
         JsonObject params = new JsonObject().put(Constants.TOKEN, context.request().getHeader(Constants.TOKEN));
         vertx.eventBus().rxSend(EventBusAddress.GET_USER, params).subscribe(message -> {
-            this.returnWithSuccessMessage(context, "获取用户信息失败成功", JsonObject.mapFrom(message.body()).getJsonObject(Constants.BODY));
+            this.returnWithSuccessMessage(context, "获取用户信息成功", JsonObject.mapFrom(message.body()).getJsonObject(Constants.BODY));
             return ;
         }, fail -> {
             LOGGER.info("获取用户信息失败：", fail.getCause());
