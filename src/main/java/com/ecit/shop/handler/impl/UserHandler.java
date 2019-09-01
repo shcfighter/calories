@@ -148,7 +148,6 @@ public class UserHandler extends JdbcRxRepositoryWrapper implements IUserHandler
 
     @Override
     public IUserHandler getUserInfo(String token, Handler<AsyncResult<JsonObject>> handler) {
-        LOGGER.info("token: " + token);
         Future<JsonObject> sessionFuture = this.getSession(token);
         sessionFuture.compose(session -> {
             long userId = session.getLong("user_id");

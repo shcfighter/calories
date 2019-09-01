@@ -3,6 +3,7 @@ package com.ecit.shop.api;
 import com.ecit.auth.ShopUserSessionHandler;
 import com.ecit.common.constants.Constants;
 import com.ecit.common.rx.RestAPIRxVerticle;
+import com.ecit.common.utils.IpUtils;
 import com.ecit.shop.constants.EventBusAddress;
 import com.ecit.shop.handler.IFoodHandler;
 import com.ecit.shop.handler.IHeatHandler;
@@ -132,6 +133,7 @@ public class RestCaloriesRxVerticle extends RestAPIRxVerticle{
      */
     private void searchHandler(RoutingContext context){
         final JsonObject params = context.getBodyAsJson();
+        LOGGER.info("{} 查询食物：{}", IpUtils.getIpAddr(context.request().getDelegate()), params.getString("keyword") );
         vertx.eventBus().rxSend(EventBusAddress.SEARCH_FOOD, params).subscribe(message -> {
             final JsonObject result = JsonObject.mapFrom(message.body());
             if(this.isNoDataResult(result)){
