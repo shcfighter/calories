@@ -11,6 +11,7 @@ done
 # 删除log
 echo "remove logs"
 rm -rf /data/calories/logs/calories*.log
+rm -rf /data/calories/logs/calories_dump.hprof*
 
 mvn clean install
 
