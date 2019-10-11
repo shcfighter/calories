@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration status="warn" name="MyApp">
+<Appenders>
+    <Kafka name="Kafka" topic="log-test">
+      <PatternLayout pattern="%date %message"/>
+        <Property name="bootstrap.servers">111.231.132.168:9092</Property>
+    </Kafka>
+  </Appenders>
+<Loggers>
+    <Root level="DEBUG">
+      <AppenderRef ref="Kafka"/>
+    </Root>
+    <Logger name="org.apache.kafka" level="INFO" /> <!-- avoid recursive logging -->
+  </Loggers>
+</Configuration>
