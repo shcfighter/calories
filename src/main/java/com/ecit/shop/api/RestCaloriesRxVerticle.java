@@ -80,7 +80,7 @@ public class RestCaloriesRxVerticle extends RestAPIRxVerticle{
      */
     private void accreditHandler(RoutingContext context){
         final JsonObject params = context.getBodyAsJson();
-        LOGGER.info("授权用户信息：{}", params::encodePrettily);
+        LOGGER.info("url:{}, ip:{}, params:{}", context.request().uri(), IpUtils.getIpAddr(context.request().getDelegate()), params.encodePrettily());
         vertx.eventBus().rxSend(EventBusAddress.ACCREDIT, params).subscribe(message -> {
             this.returnWithSuccessMessage(context, "授权成功", JsonObject.mapFrom(message.body()).getJsonObject(Constants.BODY));
             return ;
@@ -98,6 +98,7 @@ public class RestCaloriesRxVerticle extends RestAPIRxVerticle{
     private void checkTokenHandler(RoutingContext context){
         final String token = context.request().getHeader("token");
         JsonObject params = new JsonObject().put(Constants.TOKEN, token);
+        LOGGER.info("url:{}, ip:{}, params:{}", context.request().uri(), IpUtils.getIpAddr(context.request().getDelegate()), params.encodePrettily());
         vertx.eventBus().rxSend(EventBusAddress.USER_CHECK, params).subscribe(message -> {
             JsonObject result = JsonObject.mapFrom(message.body());
             if (this.isNoDataResult(result)) {
@@ -117,6 +118,7 @@ public class RestCaloriesRxVerticle extends RestAPIRxVerticle{
      * 初始化食物信息
      */
     private void initFoodHandler(RoutingContext context){
+        LOGGER.info("url:{}, ip:{}, params:{}", context.request().uri(), IpUtils.getIpAddr(context.request().getDelegate()), new JsonObject());
         vertx.eventBus().rxSend(EventBusAddress.INIT_FOOD, new JsonObject()).subscribe(message -> {
             this.returnWithSuccessMessage(context, "获取商品类别信息成功", JsonObject.mapFrom(message.body()).getJsonObject(Constants.BODY));
             return ;
@@ -133,7 +135,7 @@ public class RestCaloriesRxVerticle extends RestAPIRxVerticle{
      */
     private void searchHandler(RoutingContext context){
         final JsonObject params = context.getBodyAsJson();
-        LOGGER.info("{} 查询食物：{}", IpUtils.getIpAddr(context.request().getDelegate()), params.getString("keyword") );
+        LOGGER.info("url:{}, ip:{}, params:{}", context.request().uri(), IpUtils.getIpAddr(context.request().getDelegate()), params.encodePrettily());
         vertx.eventBus().rxSend(EventBusAddress.SEARCH_FOOD, params).subscribe(message -> {
             final JsonObject result = JsonObject.mapFrom(message.body());
             if(this.isNoDataResult(result)){
@@ -157,6 +159,7 @@ public class RestCaloriesRxVerticle extends RestAPIRxVerticle{
      */
     private void findFoodByIdHandler(RoutingContext context){
         JsonObject params = new JsonObject().put(Constants.ID, Long.parseLong(context.request().getParam(Constants.ID)));
+        LOGGER.info("url:{}, ip:{}, params:{}", context.request().uri(), IpUtils.getIpAddr(context.request().getDelegate()), params.encodePrettily());
         vertx.eventBus().rxSend(EventBusAddress.FOOD_DETAIL, params).subscribe(message -> {
             this.returnWithSuccessMessage(context, "查询食物信息详情成功", JsonObject.mapFrom(message.body()).getJsonObject(Constants.BODY));
             return ;
@@ -173,6 +176,7 @@ public class RestCaloriesRxVerticle extends RestAPIRxVerticle{
      */
     private void findHeatByFoodIdHandler(RoutingContext context){
         JsonObject params = new JsonObject().put(Constants.ID, Long.parseLong(context.request().getParam(Constants.ID)));
+        LOGGER.info("url:{}, ip:{}, params:{}", context.request().uri(), IpUtils.getIpAddr(context.request().getDelegate()), params.encodePrettily());
         vertx.eventBus().rxSend(EventBusAddress.HEAT_DETAIL, params).subscribe(message -> {
             this.returnWithSuccessMessage(context, "查询热量信息详情成功", JsonObject.mapFrom(message.body()).getJsonArray(Constants.BODY));
             return ;
@@ -190,6 +194,7 @@ public class RestCaloriesRxVerticle extends RestAPIRxVerticle{
     private void getUserInfoHandler(RoutingContext context){
         LOGGER.info("header token:{}", context.request().getHeader(Constants.TOKEN));
         JsonObject params = new JsonObject().put(Constants.TOKEN, context.request().getHeader(Constants.TOKEN));
+        LOGGER.info("url:{}, ip:{}, params:{}", context.request().uri(), IpUtils.getIpAddr(context.request().getDelegate()), params.encodePrettily());
         vertx.eventBus().rxSend(EventBusAddress.GET_USER, params).subscribe(message -> {
             this.returnWithSuccessMessage(context, "获取用户信息成功", JsonObject.mapFrom(message.body()).getJsonObject(Constants.BODY));
             return ;
@@ -206,6 +211,7 @@ public class RestCaloriesRxVerticle extends RestAPIRxVerticle{
      */
     private void updateUserInfoHandler(RoutingContext context){
         JsonObject params = context.getBodyAsJson().put(Constants.TOKEN, context.request().getHeader(Constants.TOKEN));
+        LOGGER.info("url:{}, ip:{}, params:{}", context.request().uri(), IpUtils.getIpAddr(context.request().getDelegate()), params.encodePrettily());
         vertx.eventBus().rxSend(EventBusAddress.UPDATE_USER, params).subscribe(message -> {
             this.returnWithSuccessMessage(context, "更改手机号码成功");
             return ;
