@@ -162,7 +162,7 @@ public class JdbcRxRepositoryWrapper {
       if(StringUtils.isEmpty(token)){
           return Future.succeededFuture(new JsonObject());
       }
-      /*Future<JsonObject> future = Future.future();
+      Future<JsonObject> future = Future.future();
       redisClient.hget(Constants.VERTX_WEB_SESSION, token, handler -> {
           if (handler.succeeded()) {
               String user = handler.result();
@@ -186,9 +186,9 @@ public class JdbcRxRepositoryWrapper {
                       }, future::fail);
           }
       });
-      return future;*/
+      return future;
 
-      Future<String> redisResult = Future.future();
+      /*Future<String> redisResult = Future.future();
       redisClient.rxHget(Constants.VERTX_WEB_SESSION, token).subscribe(redisResult::complete, redisResult::fail);
       return redisResult.compose(user -> {
           LOGGER.info("redis user: {}", user);
@@ -203,7 +203,7 @@ public class JdbcRxRepositoryWrapper {
               return future;
           }
           return Future.succeededFuture(new JsonObject(user));
-      });
+      });*/
   }
 
     /**
