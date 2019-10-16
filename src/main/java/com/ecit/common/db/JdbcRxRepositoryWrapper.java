@@ -161,7 +161,30 @@ public class JdbcRxRepositoryWrapper {
       if(StringUtils.isEmpty(token)){
           return Future.succeededFuture(new JsonObject());
       }
-      Future<String> redisResult = Future.future();
+      Future<JsonObject> future = Future.future();
+      redisClient.rxHget(Constants.VERTX_WEB_SESSION, token).subscribe(user -> {
+          LOGGER.info("redis user: {}", user);
+          if(StringUtils.isEmpty(user)){
+              this.retrieveOne(new JsonArray().add(token), UserSql.SELECT_BY_TOKEN_SQL)
+                      .subscribe(future::complete, future::fail);
+              future.compose(u ->{
+                  this.setSession(token, u);
+                  return Future.succeededFuture();
+              });
+          }
+          future.complete(new JsonObject(user));
+      }, fail -> {
+          LOGGER.info("redis query token error:", fail.getCause());
+          this.retrieveOne(new JsonArray().add(token), UserSql.SELECT_BY_TOKEN_SQL)
+                  .subscribe(future::complete, future::fail);
+          future.compose(u ->{
+              this.setSession(token, u);
+              return Future.succeededFuture();
+          });
+      });
+      return future;
+
+      /*Future<String> redisResult = Future.future();
       redisClient.rxHget(Constants.VERTX_WEB_SESSION, token).subscribe(redisResult::complete, redisResult::fail);
       return redisResult.compose(user -> {
           LOGGER.info("redis user: {}", user);
@@ -176,7 +199,7 @@ public class JdbcRxRepositoryWrapper {
               return future;
           }
           return Future.succeededFuture(new JsonObject(user));
-      });
+      });*/
   }
 
     /**
