@@ -173,7 +173,7 @@ public class JdbcRxRepositoryWrapper {
                   future.compose(u -> {
                       LOGGER.info("db user: {}", u::encodePrettily);
                       this.setSession(token, u);
-                      return Future.succeededFuture();
+                      return Future.succeededFuture(u);
                   });
               }
               future.complete(new JsonObject(user));
@@ -183,7 +183,7 @@ public class JdbcRxRepositoryWrapper {
                       .subscribe(future::complete, future::fail);
               future.compose(u -> {
                   this.setSession(token, u);
-                  return Future.succeededFuture();
+                  return Future.succeededFuture(u);
               });
           }
       });
