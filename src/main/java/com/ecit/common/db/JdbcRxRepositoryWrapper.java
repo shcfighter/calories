@@ -162,7 +162,6 @@ public class JdbcRxRepositoryWrapper {
       if(StringUtils.isEmpty(token)){
           return Future.succeededFuture(new JsonObject());
       }
-      Future<JsonObject> future = Future.future();
       redisClient.ping(handler -> {
           if (handler.failed()) {
               LOGGER.info("ping fail");
@@ -170,25 +169,29 @@ public class JdbcRxRepositoryWrapper {
               LOGGER.info("ping success");
           }
       });
-      redisClient.rxHget(Constants.VERTX_WEB_SESSION, token).subscribe(user -> {
-          LOGGER.info("redis user: {}", user);
-          if(StringUtils.isEmpty(user)){
+      Future<JsonObject> future = Future.future();
+      redisClient.hget(Constants.VERTX_WEB_SESSION, token, handler -> {
+          if (handler.succeeded()) {
+              String user = handler.result();
+              LOGGER.info("redis user: {}", user);
+              if (StringUtils.isEmpty(user)) {
+                  this.retrieveOne(new JsonArray().add(token), UserSql.SELECT_BY_TOKEN_SQL)
+                          .subscribe(future::complete, future::fail);
+                  future.compose(u -> {
+                      this.setSession(token, u);
+                      return Future.succeededFuture();
+                  });
+              }
+              future.complete(new JsonObject(user));
+          } else {
+              LOGGER.info("redis query token error:", handler.cause());
               this.retrieveOne(new JsonArray().add(token), UserSql.SELECT_BY_TOKEN_SQL)
                       .subscribe(future::complete, future::fail);
-              future.compose(u ->{
+              future.compose(u -> {
                   this.setSession(token, u);
                   return Future.succeededFuture();
               });
           }
-          future.complete(new JsonObject(user));
-      }, fail -> {
-          LOGGER.info("redis query token error:", fail.getCause());
-          this.retrieveOne(new JsonArray().add(token), UserSql.SELECT_BY_TOKEN_SQL)
-                  .subscribe(future::complete, future::fail);
-          future.compose(u ->{
-              this.setSession(token, u);
-              return Future.succeededFuture();
-          });
       });
       return future;
 
