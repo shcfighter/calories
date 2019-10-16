@@ -195,11 +195,11 @@ public class JdbcRxRepositoryWrapper {
           if(StringUtils.isEmpty(user)){
               Future<JsonObject> future = Future.future();
               this.retrieveOne(new JsonArray().add(token), UserSql.SELECT_BY_TOKEN_SQL)
-                      .subscribe(future::complete, future::fail);
-              future.compose(u ->{
-                  this.setSession(token, u);
-                  return future;
-              });
+                      .subscribe(u -> {
+                          LOGGER.info("db user: {}", u::encodePrettily);
+                          this.setSession(token, u);
+                          future.complete(u);
+                      }, future::fail);
               return future;
           }
           return Future.succeededFuture(new JsonObject(user));
