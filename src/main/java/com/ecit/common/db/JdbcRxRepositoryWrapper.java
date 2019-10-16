@@ -158,6 +158,7 @@ public class JdbcRxRepositoryWrapper {
      * @return
      */
   protected Future<JsonObject> getSession(String token){
+      LOGGER.info("getSession token：{}", token);
       if(StringUtils.isEmpty(token)){
           return Future.succeededFuture(new JsonObject());
       }

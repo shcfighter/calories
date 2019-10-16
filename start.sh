@@ -13,7 +13,7 @@ echo "remove logs"
 rm -rf /data/calories/logs/calories*.log
 rm -rf /data/calories/logs/calories_dump.hprof*
 
-mvn clean install
+mvn clean install -Dmaven.test.skip=true
 
 #启动服务
 nohup java -Xms512m -Xmx512m -XX:+HeapDumpOnOutOfMemoryError -XX:+HeapDumpBeforeFullGC -XX:HeapDumpPath=/data/calories/logs/calories_dump.hprof -XX:+PrintGC -XX:+PrintGCDetails -Xloggc:/data/calories/logs/calories_gc.log -jar /data/calories/calories/target/calories-1.0-SNAPSHOT-fat.jar -conf /data/calories_config.json -cluster >> /data/calories/logs/calories.log &
