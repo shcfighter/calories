@@ -169,22 +169,21 @@ public class JdbcRxRepositoryWrapper {
               LOGGER.info("redis user: {}", user);
               if (StringUtils.isEmpty(user)) {
                   this.retrieveOne(new JsonArray().add(token), UserSql.SELECT_BY_TOKEN_SQL)
-                          .subscribe(future::complete, future::fail);
-                  future.compose(u -> {
-                      LOGGER.info("db user: {}", u::encodePrettily);
-                      this.setSession(token, u);
-                      return Future.succeededFuture(u);
-                  });
+                          .subscribe(u -> {
+                              LOGGER.info("getUserInfo db user: {}", u::encodePrettily);
+                              this.setSession(token, u);
+                              future.complete(u);
+                          }, future::fail);
               }
               future.complete(new JsonObject(user));
           } else {
               LOGGER.info("redis query token error:", handler.cause());
               this.retrieveOne(new JsonArray().add(token), UserSql.SELECT_BY_TOKEN_SQL)
-                      .subscribe(future::complete, future::fail);
-              future.compose(u -> {
-                  this.setSession(token, u);
-                  return Future.succeededFuture(u);
-              });
+                      .subscribe(u -> {
+                          LOGGER.info("getUserInfo db user: {}", u::encodePrettily);
+                          this.setSession(token, u);
+                          future.complete(u);
+                      }, future::fail);
           }
       });
       return future;
@@ -213,10 +212,10 @@ public class JdbcRxRepositoryWrapper {
      * @param jsonObject
      */
   protected void setSession(String token, JsonObject jsonObject){
-      /*redisClient.rxHset(Constants.VERTX_WEB_SESSION, token, jsonObject.toString()).subscribe();
-      redisClient.rxExpire(Constants.VERTX_WEB_SESSION, Constants.SESSION_EXPIRE_TIME).subscribe();*/
-      redisClient.hset(Constants.VERTX_WEB_SESSION, token, jsonObject.toString(), handler -> {});
-      redisClient.expire(Constants.VERTX_WEB_SESSION, Constants.SESSION_EXPIRE_TIME, handler -> {});
+      redisClient.rxHset(Constants.VERTX_WEB_SESSION, token, jsonObject.toString()).subscribe();
+      redisClient.rxExpire(Constants.VERTX_WEB_SESSION, Constants.SESSION_EXPIRE_TIME).subscribe();
+      /*redisClient.hset(Constants.VERTX_WEB_SESSION, token, jsonObject.toString(), handler -> {});
+      redisClient.expire(Constants.VERTX_WEB_SESSION, Constants.SESSION_EXPIRE_TIME, handler -> {});*/
   }
 
 }

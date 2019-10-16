@@ -149,8 +149,8 @@ public class UserHandler extends JdbcRxRepositoryWrapper implements IUserHandler
 
     @Override
     public IUserHandler getUserInfo(String token, Handler<AsyncResult<JsonObject>> handler) {
-        //Future<JsonObject> sessionFuture = this.getSession(token);
-        Future<JsonObject> sessionFuture = Future.future();
+        Future<JsonObject> sessionFuture = this.getSession(token);
+        /*Future<JsonObject> sessionFuture = Future.future();
         redisClient.hget(Constants.VERTX_WEB_SESSION, token, redisHandler -> {
             if (redisHandler.succeeded()) {
                 String user = redisHandler.result();
@@ -177,7 +177,7 @@ public class UserHandler extends JdbcRxRepositoryWrapper implements IUserHandler
                     return Future.succeededFuture(u);
                 });
             }
-        });
+        });*/
         sessionFuture.compose(session -> {
             long userId = session.getLong("user_id");
             LOGGER.info("userId:{}", userId);
