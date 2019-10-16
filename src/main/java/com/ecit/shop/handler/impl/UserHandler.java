@@ -1,6 +1,7 @@
 package com.ecit.shop.handler.impl;
 
 import com.ecit.common.IdBuilder;
+import com.ecit.common.constants.Constants;
 import com.ecit.common.db.JdbcRxRepositoryWrapper;
 import com.ecit.common.enums.JdbcEnum;
 import com.ecit.common.utils.JsonUtils;
@@ -148,7 +149,32 @@ public class UserHandler extends JdbcRxRepositoryWrapper implements IUserHandler
 
     @Override
     public IUserHandler getUserInfo(String token, Handler<AsyncResult<JsonObject>> handler) {
-        Future<JsonObject> sessionFuture = this.getSession(token);
+        //Future<JsonObject> sessionFuture = this.getSession(token);
+        Future<JsonObject> sessionFuture = Future.future();
+        redisClient.hget(Constants.VERTX_WEB_SESSION, token, redisHandler -> {
+            if (redisHandler.succeeded()) {
+                String user = redisHandler.result();
+                LOGGER.info("getUserInfo redis user: {}", user);
+                if (StringUtils.isEmpty(user)) {
+                    this.retrieveOne(new JsonArray().add(token), UserSql.SELECT_BY_TOKEN_SQL)
+                            .subscribe(sessionFuture::complete, sessionFuture::fail);
+                    sessionFuture.compose(u -> {
+                        LOGGER.info("getUserInfo db user: {}", u::encodePrettily);
+                        this.setSession(token, u);
+                        return Future.succeededFuture(u);
+                    });
+                }
+                sessionFuture.complete(new JsonObject(user));
+            } else {
+                LOGGER.info("getUserInfo redis query token error:", redisHandler.cause());
+                this.retrieveOne(new JsonArray().add(token), UserSql.SELECT_BY_TOKEN_SQL)
+                        .subscribe(sessionFuture::complete, sessionFuture::fail);
+                sessionFuture.compose(u -> {
+                    this.setSession(token, u);
+                    return Future.succeededFuture(u);
+                });
+            }
+        });
         sessionFuture.compose(session -> {
             long userId = session.getLong("user_id");
             LOGGER.info("userId:{}", userId);
