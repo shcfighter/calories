@@ -163,6 +163,13 @@ public class JdbcRxRepositoryWrapper {
           return Future.succeededFuture(new JsonObject());
       }
       Future<JsonObject> future = Future.future();
+      redisClient.ping(handler -> {
+          if (handler.failed()) {
+              LOGGER.info("ping fail");
+          } else {
+              LOGGER.info("ping success");
+          }
+      });
       redisClient.rxHget(Constants.VERTX_WEB_SESSION, token).subscribe(user -> {
           LOGGER.info("redis user: {}", user);
           if(StringUtils.isEmpty(user)){
