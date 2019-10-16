@@ -178,6 +178,7 @@ public class JdbcRxRepositoryWrapper {
                   this.retrieveOne(new JsonArray().add(token), UserSql.SELECT_BY_TOKEN_SQL)
                           .subscribe(future::complete, future::fail);
                   future.compose(u -> {
+                      LOGGER.info("db user: {}", u::encodePrettily);
                       this.setSession(token, u);
                       return Future.succeededFuture();
                   });
