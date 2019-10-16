@@ -157,18 +157,21 @@ public class UserHandler extends JdbcRxRepositoryWrapper implements IUserHandler
                 LOGGER.info("getUserInfo redis user: {}", user);
                 if (StringUtils.isEmpty(user)) {
                     this.retrieveOne(new JsonArray().add(token), UserSql.SELECT_BY_TOKEN_SQL)
-                            .subscribe(sessionFuture::complete, sessionFuture::fail);
-                    sessionFuture.compose(u -> {
-                        LOGGER.info("getUserInfo db user: {}", u::encodePrettily);
-                        this.setSession(token, u);
-                        return Future.succeededFuture(u);
-                    });
+                            .subscribe(u -> {
+                                LOGGER.info("getUserInfo db user: {}", u::encodePrettily);
+                                this.setSession(token, u);
+                                sessionFuture.complete(u);
+                            }, sessionFuture::fail);
                 }
                 sessionFuture.complete(new JsonObject(user));
             } else {
                 LOGGER.info("getUserInfo redis query token error:", redisHandler.cause());
                 this.retrieveOne(new JsonArray().add(token), UserSql.SELECT_BY_TOKEN_SQL)
-                        .subscribe(sessionFuture::complete, sessionFuture::fail);
+                        .subscribe(u -> {
+                            LOGGER.info("getUserInfo db user: {}", u::encodePrettily);
+                            this.setSession(token, u);
+                            sessionFuture.complete(u);
+                        }, sessionFuture::fail);
                 sessionFuture.compose(u -> {
                     this.setSession(token, u);
                     return Future.succeededFuture(u);
