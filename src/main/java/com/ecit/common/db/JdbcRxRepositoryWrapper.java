@@ -16,6 +16,8 @@ import io.vertx.reactivex.ext.sql.SQLConnection;
 import io.vertx.reactivex.redis.RedisClient;
 import io.vertx.redis.RedisOptions;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.util.Arrays;
 import java.util.List;
@@ -24,6 +26,8 @@ import java.util.List;
  * Helper and wrapper class for JDBC repository services.
  */
 public class JdbcRxRepositoryWrapper {
+
+    private static final Logger LOGGER = LogManager.getLogger(JdbcRxRepositoryWrapper.class);
 
   protected final SQLClient postgreSQLClient;
   protected final RedisClient redisClient;
@@ -160,7 +164,7 @@ public class JdbcRxRepositoryWrapper {
       Future<String> redisResult = Future.future();
       redisClient.rxHget(Constants.VERTX_WEB_SESSION, token).subscribe(redisResult::complete, redisResult::fail);
       return redisResult.compose(user -> {
-          System.out.println("u: " + user);
+          LOGGER.info("redis user: {}", user);
           if(StringUtils.isEmpty(user)){
               Future<JsonObject> future = Future.future();
               this.retrieveOne(new JsonArray().add(token), UserSql.SELECT_BY_TOKEN_SQL)
