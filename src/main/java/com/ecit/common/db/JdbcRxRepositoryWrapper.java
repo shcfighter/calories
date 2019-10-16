@@ -162,13 +162,6 @@ public class JdbcRxRepositoryWrapper {
       if(StringUtils.isEmpty(token)){
           return Future.succeededFuture(new JsonObject());
       }
-      redisClient.ping(handler -> {
-          if (handler.failed()) {
-              LOGGER.info("ping fail");
-          } else {
-              LOGGER.info("ping success");
-          }
-      });
       Future<JsonObject> future = Future.future();
       redisClient.hget(Constants.VERTX_WEB_SESSION, token, handler -> {
           if (handler.succeeded()) {
@@ -220,8 +213,10 @@ public class JdbcRxRepositoryWrapper {
      * @param jsonObject
      */
   protected void setSession(String token, JsonObject jsonObject){
-      redisClient.rxHset(Constants.VERTX_WEB_SESSION, token, jsonObject.toString()).subscribe();
-      redisClient.rxExpire(Constants.VERTX_WEB_SESSION, Constants.SESSION_EXPIRE_TIME).subscribe();
+      /*redisClient.rxHset(Constants.VERTX_WEB_SESSION, token, jsonObject.toString()).subscribe();
+      redisClient.rxExpire(Constants.VERTX_WEB_SESSION, Constants.SESSION_EXPIRE_TIME).subscribe();*/
+      redisClient.hset(Constants.VERTX_WEB_SESSION, token, jsonObject.toString(), handler -> {});
+      redisClient.expire(Constants.VERTX_WEB_SESSION, Constants.SESSION_EXPIRE_TIME, handler -> {});
   }
 
 }
