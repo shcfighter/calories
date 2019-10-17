@@ -79,13 +79,6 @@
 
     </appenders>
 	
-  <Appenders>
-    <Kafka name="Kafka" topic="log-test">
-	<PatternLayout pattern="[%d{yyyy-MM-dd HH:mm:ss:SSS}] [%p] [%t] - [%X{sid}] %l - %m%n"/>
-        <Property name="bootstrap.servers">111.231.132.168:9092</Property>
-    </Kafka>
-  </Appenders>
-
     <loggers>
         <root level="all">
             <appender-ref ref="Console"/>
@@ -94,9 +87,7 @@
             <appender-ref ref="RollingFileError"/>
             <appender-ref ref="RollingFileDebug"/>
             <appender-ref ref="RollingFileTrace"/>
-	    <AppenderRef ref="Kafka"/>
         </root>
-	<Logger name="org.apache.kafka" level="INFO" />
     </loggers>
 
 </configuration>
