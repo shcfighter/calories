@@ -17,7 +17,7 @@
         <maven.compiler.source>11</maven.compiler.source>
         <maven.compiler.target>11</maven.compiler.target>
         <java-version>11</java-version>
-        <vertx-version>3.6.0</vertx-version>
+        <vertx-version>3.8.2</vertx-version>
         <mvel2-version>2.4.2.Final</mvel2-version>
         <log4j-version>2.10.0</log4j-version>
         <slf4j-log4j12-version>1.7.25</slf4j-log4j12-version>

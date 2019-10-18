@@ -27,16 +27,10 @@ import java.util.List;
  */
 public class JdbcRxRepositoryWrapper {
 
-    private static final Logger LOGGER = LogManager.getLogger(JdbcRxRepositoryWrapper.class);
-
   protected final SQLClient postgreSQLClient;
-  protected final RedisClient redisClient;
 
   public JdbcRxRepositoryWrapper(Vertx vertx, JsonObject config) {
     this.postgreSQLClient = PostgreSQLClient.createShared(vertx, config.getJsonObject("postgresql"));
-    JsonObject redisConfig = config.getJsonObject("redis");
-    this.redisClient = RedisClient.create(vertx, new RedisOptions().setHost(redisConfig.getString("host", "localhost"))
-            .setPort(redisConfig.getInteger("port", 6379)).setAuth(redisConfig.getString("password")));
   }
 
   /**
@@ -150,70 +144,6 @@ public class JdbcRxRepositoryWrapper {
 
   protected Single<SQLConnection> getConnection() {
     return postgreSQLClient.rxGetConnection();
-  }
-
-    /**
-     * 缓存获取token
-     * @param token
-     * @return
-     */
-  protected Future<JsonObject> getSession(String token){
-      LOGGER.info("getSession token：{}", token);
-      if(StringUtils.isEmpty(token)){
-          return Future.succeededFuture(new JsonObject());
-      }
-      Future<JsonObject> future = Future.future();
-      redisClient.hget(Constants.VERTX_WEB_SESSION, token, handler -> {
-          if (handler.succeeded()) {
-              String user = handler.result();
-              LOGGER.info("redis user: {}", user);
-              if (StringUtils.isEmpty(user)) {
-                  this.retrieveOne(new JsonArray().add(token), UserSql.SELECT_BY_TOKEN_SQL)
-                          .subscribe(u -> {
-                              LOGGER.info("getUserInfo db user: {}", u::encodePrettily);
-                              this.setSession(token, u);
-                              future.complete(u);
-                          }, future::fail);
-              }
-              future.complete(new JsonObject(user));
-          } else {
-              LOGGER.info("redis query token error:", handler.cause());
-              this.retrieveOne(new JsonArray().add(token), UserSql.SELECT_BY_TOKEN_SQL)
-                      .subscribe(u -> {
-                          LOGGER.info("getUserInfo db user: {}", u::encodePrettily);
-                          this.setSession(token, u);
-                          future.complete(u);
-                      }, future::fail);
-          }
-      });
-      return future;
-
-      /*Future<String> redisResult = Future.future();
-      redisClient.rxHget(Constants.VERTX_WEB_SESSION, token).subscribe(redisResult::complete, redisResult::fail);
-      return redisResult.compose(user -> {
-          LOGGER.info("redis user: {}", user);
-          if(StringUtils.isEmpty(user)){
-              Future<JsonObject> future = Future.future();
-              this.retrieveOne(new JsonArray().add(token), UserSql.SELECT_BY_TOKEN_SQL)
-                      .subscribe(u -> {
-                          LOGGER.info("db user: {}", u::encodePrettily);
-                          this.setSession(token, u);
-                          future.complete(u);
-                      }, future::fail);
-              return future;
-          }
-          return Future.succeededFuture(new JsonObject(user));
-      });*/
-  }
-
-    /**
-     * token添加缓存
-     * @param token
-     * @param jsonObject
-     */
-  protected void setSession(String token, JsonObject jsonObject){
-      redisClient.rxHset(Constants.VERTX_WEB_SESSION, token, jsonObject.toString()).subscribe();
-      redisClient.rxExpire(Constants.VERTX_WEB_SESSION, Constants.SESSION_EXPIRE_TIME).subscribe();
   }
 
 }

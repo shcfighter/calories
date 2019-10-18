@@ -6,6 +6,7 @@ import com.ecit.common.db.JdbcRxRepositoryWrapper;
 import com.ecit.common.enums.JdbcEnum;
 import com.ecit.common.utils.JsonUtils;
 import com.ecit.common.utils.WXUtils;
+import com.ecit.shop.constants.EventBusAddress;
 import com.ecit.shop.constants.UserSql;
 import com.ecit.shop.enums.ErrcodeEnum;
 import com.ecit.shop.enums.UserStatusEnum;
@@ -93,7 +94,7 @@ public class UserHandler extends JdbcRxRepositoryWrapper implements IUserHandler
                             .add(userInfo.getString("city")).add(userInfo.getString("country")), UserSql.INSERT_USER_INFO_SQL).subscribe();
                 }
                 userSession.put("user_id", userId);
-                this.setSession(token, userSession);
+                vertx.eventBus().rxSend(EventBusAddress.SET_SESSION, new JsonObject().put(Constants.TOKEN, token).put("user", userSession)).subscribe();
                 return Future.succeededFuture(new JsonObject().put("token", token).put("uid", userId));
             });
         }).setHandler(handler);
@@ -111,7 +112,24 @@ public class UserHandler extends JdbcRxRepositoryWrapper implements IUserHandler
 
     @Override
     public IUserHandler updateUserInfo(String token, JsonObject params, Handler<AsyncResult<UpdateResult>> handler) {
-        Future<JsonObject> sessionFuture = this.getSession(token);
+        Future<JsonObject> sessionFuture = Future.future();
+        vertx.eventBus().rxSend(EventBusAddress.GET_SESSION, new JsonObject().put(Constants.TOKEN, token)).subscribe(message -> {
+            JsonObject user = JsonObject.mapFrom(message.body()).getJsonObject(Constants.BODY);
+            LOGGER.info("session user: {}", user);
+            if (Objects.isNull(user) || user.isEmpty()) {
+                this.retrieveOne(new JsonArray().add(token), UserSql.SELECT_BY_TOKEN_SQL)
+                        .subscribe(u -> {
+                            LOGGER.info("getUserInfo db user: {}", u::encodePrettily);
+                            vertx.eventBus().rxSend(EventBusAddress.SET_SESSION, new JsonObject().put(Constants.TOKEN, token).put("user", u)).subscribe();
+                            sessionFuture.complete(u);
+                        }, sessionFuture::fail);
+            } else {
+                sessionFuture.complete(user);
+            }
+        }, fail -> {
+            LOGGER.info("获取session失败：", fail.getCause());
+            sessionFuture.fail(fail.getCause());
+        });
         sessionFuture.compose(session -> {
             long userId = session.getLong("user_id");
             List<JsonObject> exec = new ArrayList<>();
@@ -149,7 +167,24 @@ public class UserHandler extends JdbcRxRepositoryWrapper implements IUserHandler
 
     @Override
     public IUserHandler getUserInfo(String token, Handler<AsyncResult<JsonObject>> handler) {
-        Future<JsonObject> sessionFuture = this.getSession(token);
+        Future<JsonObject> sessionFuture = Future.future();
+        vertx.eventBus().rxSend(EventBusAddress.GET_SESSION, new JsonObject().put(Constants.TOKEN, token)).subscribe(message -> {
+            JsonObject user = JsonObject.mapFrom(message.body()).getJsonObject(Constants.BODY);
+            LOGGER.info("session user: {}", user);
+            if (Objects.isNull(user) || user.isEmpty()) {
+                this.retrieveOne(new JsonArray().add(token), UserSql.SELECT_BY_TOKEN_SQL)
+                        .subscribe(u -> {
+                            LOGGER.info("getUserInfo db user: {}", u::encodePrettily);
+                            vertx.eventBus().rxSend(EventBusAddress.SET_SESSION, new JsonObject().put(Constants.TOKEN, token).put("user", u)).subscribe();
+                            sessionFuture.complete(u);
+                        }, sessionFuture::fail);
+            } else {
+                sessionFuture.complete(user);
+            }
+        }, fail -> {
+            LOGGER.info("获取session失败：", fail.getCause());
+            sessionFuture.fail(fail.getCause());
+        });
         sessionFuture.compose(session -> {
             long userId = session.getLong("user_id");
             LOGGER.info("userId:{}", userId);

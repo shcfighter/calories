@@ -13,7 +13,7 @@ public class Constants {
     /**
      * session过期时间
      */
-    public static final long SESSION_EXPIRE_TIME = 24 * 60 * 60;
+    public static final String SESSION_EXPIRE_TIME = "86400";
 
     /**
      * lucene商品索引indeces

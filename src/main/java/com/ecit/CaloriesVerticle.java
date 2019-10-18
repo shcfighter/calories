@@ -2,6 +2,7 @@ package com.ecit;
 
 import com.ecit.common.rx.BaseMicroserviceRxVerticle;
 import com.ecit.shop.api.DataRxVerticle;
+import com.ecit.shop.api.RedisRxVerticle;
 import com.ecit.shop.api.RestCaloriesRxVerticle;
 import com.hazelcast.config.Config;
 import com.hazelcast.config.GroupConfig;
@@ -23,6 +24,7 @@ public class CaloriesVerticle extends BaseMicroserviceRxVerticle{
         super.start(startFuture);
         vertx.getDelegate().deployVerticle(RestCaloriesRxVerticle.class, new DeploymentOptions().setConfig(this.config()).setInstances(this.config().getInteger("instances", 1)));
         vertx.getDelegate().deployVerticle(DataRxVerticle.class, new DeploymentOptions().setConfig(this.config()).setInstances(this.config().getInteger("instances", 2)));
+        vertx.getDelegate().deployVerticle(RedisRxVerticle.class, new DeploymentOptions().setConfig(this.config()).setInstances(this.config().getInteger("instances", 2)));
     }
 
     public static void main(String[] args) {

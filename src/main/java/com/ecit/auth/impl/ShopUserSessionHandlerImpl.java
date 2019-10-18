@@ -6,10 +6,14 @@
 package com.ecit.auth.impl;
 
 import com.ecit.auth.ShopUserSessionHandler;
+import com.ecit.common.constants.Constants;
 import com.ecit.common.db.JdbcRxRepositoryWrapper;
 import com.ecit.common.result.ResultItems;
-import io.vertx.core.Future;
+import com.ecit.common.utils.JsonUtils;
+import com.ecit.shop.constants.EventBusAddress;
+import com.ecit.shop.constants.UserSql;
 import io.vertx.core.Vertx;
+import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.RoutingContext;
 import org.apache.logging.log4j.LogManager;
@@ -20,24 +24,38 @@ import java.util.Objects;
 public class ShopUserSessionHandlerImpl extends JdbcRxRepositoryWrapper implements ShopUserSessionHandler {
 
     private static final Logger LOGGER = LogManager.getLogger(ShopUserSessionHandlerImpl.class);
+    private static io.vertx.reactivex.core.Vertx _vertx;
 
     public ShopUserSessionHandlerImpl(Vertx vertx, JsonObject config) {
         super(io.vertx.reactivex.core.Vertx.newInstance(vertx), config);
+        _vertx = io.vertx.reactivex.core.Vertx.newInstance(vertx);
     }
 
     public void handle(RoutingContext routingContext) {
-        String token = routingContext.request().getHeader("token");
+        String token = routingContext.request().getHeader(Constants.TOKEN);
         LOGGER.info("url: {}, token: {}", routingContext.request().uri(), token);
-        Future<JsonObject> future = this.getSession(token);
-        future.compose(user -> {
+        _vertx.eventBus().rxSend(EventBusAddress.GET_SESSION, new JsonObject().put(Constants.TOKEN, token)).subscribe(message -> {
+            JsonObject user = JsonObject.mapFrom(message.body()).getJsonObject(Constants.BODY);
             LOGGER.info("session user: {}", user);
             if (Objects.isNull(user) || user.isEmpty()) {
-                this.noAuth(routingContext);
-                return Future.succeededFuture();
+                this.retrieveOne(new JsonArray().add(token), UserSql.SELECT_BY_TOKEN_SQL)
+                        .subscribe(u -> {
+                            LOGGER.info("getUserInfo db user: {}", u::encodePrettily);
+                            if (Objects.isNull(u)) {
+                                this.noAuth(routingContext);
+                                return ;
+                            }
+                            _vertx.eventBus().rxSend(EventBusAddress.SET_SESSION, new JsonObject().put(Constants.TOKEN, token).put("user", u)).subscribe();
+                        }, fail -> {
+                            this.noAuth(routingContext);
+                            return ;
+                        });
             }
-            return Future.succeededFuture();
+            routingContext.next();
+        }, fail -> {
+            LOGGER.info("获取session失败：", fail.getCause());
+            this.noAuth(routingContext);
         });
-        routingContext.next();
 
     }
 

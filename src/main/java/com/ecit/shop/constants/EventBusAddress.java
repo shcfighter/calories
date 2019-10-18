@@ -34,4 +34,14 @@ public interface EventBusAddress {
      * 初始化luence 索引
      */
     public static final String INIT_FOOD = "initFood";
+
+    /**
+     *  获取redis 分布式session
+     */
+    public static final String GET_SESSION = "getSession";
+
+    /**
+     *  设置redis 分布式session
+     */
+    public static final String SET_SESSION = "setSession";
 }
