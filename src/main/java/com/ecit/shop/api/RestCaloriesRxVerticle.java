@@ -160,8 +160,10 @@ public class RestCaloriesRxVerticle extends RestAPIRxVerticle{
     private void findFoodByIdHandler(RoutingContext context){
         JsonObject params = new JsonObject().put(Constants.ID, Long.parseLong(context.request().getParam(Constants.ID)));
         LOGGER.info("url:{}, ip:{}, params:{}", context.request().uri(), IpUtils.getIpAddr(context.request().getDelegate()), params.encodePrettily());
+        long startTime = System.currentTimeMillis();
         vertx.eventBus().rxSend(EventBusAddress.FOOD_DETAIL, params).subscribe(message -> {
             this.returnWithSuccessMessage(context, "查询食物信息详情成功", JsonObject.mapFrom(message.body()).getJsonObject(Constants.BODY));
+            LOGGER.info("查询用时：{}", (System.currentTimeMillis() - startTime));
             return ;
         }, fail -> {
             LOGGER.info("根据id查询食物失败：", fail.getCause());
