@@ -23,7 +23,7 @@
         <slf4j-log4j12-version>1.7.25</slf4j-log4j12-version>
         <commons-lang3.version>3.7</commons-lang3.version>
         <guava-version>27.0-jre</guava-version>
-        <bcprov.version>1.60</bcprov.version>
+        <bcprov.version>1.67</bcprov.version>
         <lucene.version>8.1.0</lucene.version>
         <maven-compiler-plugin.version>3.7.0</maven-compiler-plugin.version>
     </properties>
