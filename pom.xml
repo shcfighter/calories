@@ -19,7 +19,7 @@
         <java-version>11</java-version>
         <vertx-version>3.8.2</vertx-version>
         <mvel2-version>2.4.2.Final</mvel2-version>
-        <log4j-version>2.10.0</log4j-version>
+        <log4j-version>2.16.0</log4j-version>
         <slf4j-log4j12-version>1.7.25</slf4j-log4j12-version>
         <commons-lang3.version>3.7</commons-lang3.version>
         <guava-version>27.0-jre</guava-version>
